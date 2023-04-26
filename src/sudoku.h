@@ -18,12 +18,15 @@ typedef struct sudoku_s
 
 // functions
 
-int* s_get_row_slice(Sudoku* s, int rowIndex);
-int* s_get_col_slice(Sudoku* s, int colIndex);
-int* s_get_box_slice(Sudoku* s, int rowIndex, int colIndex);
-bool s_is_solved(Sudoku* s);
-bool s_is_array_valid(int* array);
-
+Sudoku* s_alloc_sudoku(Sudoku sudoku);
 
 void s_print(Sudoku* s);
 void s_print_stack(Sudoku s);
+
+int* s_get_row_slice(Sudoku* s, int rowIndex);
+int* s_get_col_slice(Sudoku* s, int colIndex);
+int* s_get_box_slice(Sudoku* s, int rowIndex, int colIndex);
+
+bool s_is_array_valid(int* array);
+bool s_is_solved(Sudoku* s);
+

@@ -177,12 +177,46 @@ void s_print(Sudoku* s)
 
 void s_print_stack(Sudoku s)
 {
+  // top border line
+  printf(" ");
+  for (int c = 0; c < SIZE; ++c) printf("---");
+  printf("\n");
+
+
   for (int r = 0; r < SIZE; ++r)
   {
+    // for (int c = 0; c < SIZE; ++c) printf("----");
+    // printf("\n");
+
     for (int c = 0; c < SIZE; ++c)
     {
-      printf(" %d |", s.values[r][c]);
+      // printf(" %d |", s.values[r][c]);
+      printf(" %d ", s.values[r][c]);
+
+      if (c == 2 || c == 5) printf("|");
     }
+
     printf("\n");
+
+    if (r == 2 || r == 5)
+    {
+      printf(" ");
+      for (int c = 0; c < SIZE; ++c) printf("---");
+      printf("\n");
+    }
   }
+
+  // bottom border line
+  printf(" ");
+  for (int c = 0; c < SIZE; ++c) printf("---");
+  printf("\n");
+}
+
+Sudoku* s_alloc_sudoku(Sudoku sudoku)
+{
+  Sudoku* s = (Sudoku*)calloc(1, sizeof(Sudoku));
+
+  memmove(s->values, sudoku.values, sizeof(int) * 9 * 9);
+
+  return s;
 }
