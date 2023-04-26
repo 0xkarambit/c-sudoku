@@ -8,6 +8,9 @@
 
 #define SIZE 9
 
+#define and &&
+#define or ||
+
 typedef struct sudoku_s
 {
   // Numbers to be Placed as they are, no reordering.
@@ -30,3 +33,9 @@ int* s_get_box_slice(Sudoku* s, int rowIndex, int colIndex);
 bool s_is_array_valid(int* array);
 bool s_is_solved(Sudoku* s);
 
+
+void s_prep_cache(Sudoku* s, int r, int c);
+void s_prep_cache_all(Sudoku* s);
+
+bool s_solve(Sudoku* s);
+bool s_r_solve(Sudoku* s, int r, int c);

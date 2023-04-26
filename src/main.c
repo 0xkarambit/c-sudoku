@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -71,15 +72,33 @@ int main()
   };
 
 
-  srand(time(0));
 
-  int r = rand() % 30 - 1;
+  // srand(time(0));
+  // int r = rand() % 30 - 1;
+  // s_print_stack(sudokus[r]);
 
-  s_print_stack(sudokus[r]);
-  // s_print_stack(s1);
+  s_print_stack(s1);
 
+  Sudoku* s2 = s_alloc_sudoku(s1);
 
+  s_prep_cache_all(s2);
 
-  printf("Hello World");
+  int r = s_r_solve(s2, 0, 0);
+
+  if (r == true)
+  {
+    printf("true\n");
+  }
+  else
+  {
+    printf("false\n");
+  }
+
+  s_print(s2);
+
+  free(s2);
+  // todo write notes on c time and random functions
+
+  printf("Hello World\n");
   return 0;
 }
