@@ -50,24 +50,6 @@ const Sudoku DEMO_SUDOKUS[30] = {
 
 int main()
 {
-
-  // https://stackoverflow.com/questions/30980759/when-should-i-pass-or-return-a-struct-by-value
-  Sudoku s = {
-    .values = {
-      {1,2,3,4,5,6,7,8,9},
-      {1,2,3,4,5,6,7,8,9},
-      {1,2,3,4,5,6,7,8,9},
-
-      {1,2,3,4,5,6,7,8,9},
-      {1,2,3,4,5,6,7,8,9},
-      {1,2,3,4,5,6,7,8,9},
-      
-      {1,2,3,4,5,6,7,8,9},
-      {1,2,3,4,5,6,7,8,9},
-      {1,2,3,4,5,6,7,8,9},
-    }
-  };
-
   // https://www.kaggle.com/datasets/rohanrao/sudoku
   Sudoku s1 = {
     {{0,7,0,0,0,0,0,4,3},
@@ -80,7 +62,7 @@ int main()
     {9,0,2,1,0,0,0,0,5},
     {0,0,7,0,4,0,8,0,2}}
   };
-  
+
   int s1_solution[9][9] = {
     {6,7,9,5,1,8,2,4,3},
     {5,4,3,7,2,9,6,1,8},
@@ -104,30 +86,41 @@ int main()
 
   // s_prep_cache_all(s2);
 
-  int r = s_solve_rec(s2, 0, 0);
-
-  if (r == true)
-  {
-    printf("true\n");
-  }
-  else
-  {
-    printf("false\n");
-  }
+  s_solve_rec(s2, 0, 0);
 
   s_print(s2);
 
   if (memcmp(s1_solution, s2->values, sizeof(int) * 81) == 0)
   {
-    printf("SOLVED !\n");
+    printf("\nSOLVED !\n");
   }
   else {
-    printf("FAILED !\n");
-  }
-
+    printf("\nFAILED !\n");
+  }  
   free(s2);
+
+#if 0
+  for (int i = 0; i < 30; i++)
+  {
+
+    Sudoku* current = s_alloc_sudoku(DEMO_SUDOKUS[i]);
+
+    int r = s_solve_rec(current, 0, 0);
+
+    if (r == true)
+    {
+      printf("true\n");
+    }
+    else
+    {
+      printf("false\n");
+    }
+
+    free(current);
+  }
+#endif
+
   // todo write notes on c time and random functions
 
-  // printf("Hello World\n");
   return 0;
 }
