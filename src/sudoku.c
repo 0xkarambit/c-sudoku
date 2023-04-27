@@ -223,9 +223,9 @@ Sudoku* s_alloc_sudoku(Sudoku sudoku)
 
 
 
-int row_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
-int col_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
-int grid_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
+// int row_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
+// int col_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
+// int grid_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
 
 // [r][c][suggestions] = {1,2,3,4,0,0,0,0,0}
 int cache[9][9][9] = {0};
@@ -241,7 +241,7 @@ void s_prep_cache(Sudoku* s, int r, int c)
   int* box = s_get_box_slice(s, r, c);
 
   // find the numbers which dont occur in any 3 of these arrays
-  bool occurance[10] = {0}; // max index = 9
+  bool suggestions[10] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }; // max index = 9
 
   for (int i = 0 ; i < SIZE; ++i)
   {
@@ -250,9 +250,9 @@ void s_prep_cache(Sudoku* s, int r, int c)
     int box_num = box[i];
     // if (num == 0) continue;
     // if a number exists in any of row, col or box the value for its index will be set to 1.
-    occurance[row_num] = 1;
-    occurance[col_num] = 1;
-    occurance[box_num] = 1;
+    suggestions[row_num] = false;
+    suggestions[col_num] = false;
+    suggestions[box_num] = false;
   }
 
   int cache_counter = 0;
@@ -263,9 +263,9 @@ void s_prep_cache(Sudoku* s, int r, int c)
     // mem usage with pos = sizeof(int) * 9 * 9 * 9                hmmmm.....
 
     // but then we would have to make one for the Union of r, c, b.. so ig its equal
-    if (occurance[i] == true)
+    if (suggestions[i] == true)
     {
-      cache[r][c][++cache_counter] = i;
+      cache[r][c][cache_counter++] = i;
     }
 
   }
@@ -287,7 +287,7 @@ void s_prep_cache_all(Sudoku* s)
   }
 }
 
-bool s_r_solve(Sudoku* s, int r, int c)
+bool s_solve_rec(Sudoku* s, int r, int c)
 {
   if (c == 9)
   {
@@ -299,49 +299,50 @@ bool s_r_solve(Sudoku* s, int r, int c)
 
   if (s->values[r][c] == 0)
   {
-    // take first suggestion from cache and put it as value in the Sudoku s.
-    // recurse with r++;
-
     int cc = 0;   // cache_counter
     
     s_prep_cache(s, r, c);
-    // RESULT :-> WAIT ARE WE NOT UPDATING THE CACHE ????
 
-    while (true)
+    // FOR DEBUG PURPOSES
+    // printf("\nSuggestions for %d %d :\n\t", r, c);
+    // for (int i = 0; i < 10; i++)
+    // {
+    //   printf("%d ", cache[r][c][i]);
+    // }
+    // printf("\n");
+
+    bool solved = false;
+
+    while (solved == false)
     {
-      int suggestion = cache[r][c][++cc];
+      int suggestion = cache[r][c][cc++];
 
-      if (suggestion == 0) return false;
+      // FOR DEBUG PURPOSES
+      // printf("CELL %d %d :\n\t", r, c);
+      // printf("Trying Suggestion %d = %d\n", cc, suggestion);
+
+      if (suggestion == 0) {
+        // if we dont set it to zero the algo thinks its solved already ! (thinks its the default value !)
+        s->values[r][c] = 0;
+        // do we need to clear the current suggestions too ? maybe
+        memset(cache[r][c], 0, sizeof(int) * 9);
+        return false;
+      };
 
       s->values[r][c] = suggestion;
 
-      int solved = s_r_solve(s, r, c + 1);
+      solved = s_solve_rec(s, r, c + 1);
 
-      // return false when no suggestion is found...
-      // But if we update the cache wont it go bad.....
-
-      // WE WOULD NEED TO PUT THE PREVIOUS NUMBER BACK IN CACHE FOR ALL THE OTHER LOCATIONS !
-      // ON NEXT ITERATION...
-
-      // we can just call prep_cache for preparing the cache....
-      // But its a lot more CPU and Memory usage...
-      // maybe we would have to reset `cc`
-
-      // wait ... so preparing it beforehand is actually kinda useless ..???
-
-      if (solved == true)
-      {
-        // we would essentially run the loop till we keep getting false..
-        // exit condition -> exhaust all options. -> return false.
-        //                   solved = true.
-        return true;
-      }
     }
+    // we would essentially run the loop till we keep getting false..
+    // exit condition -> exhaust all options. -> return false.
+    //                   solved = true.
+    return true;
 
   }
   else
   {
-    return s_r_solve(s, r, c + 1);
+    return s_solve_rec(s, r, c + 1);
   }
 
 }
@@ -351,15 +352,5 @@ bool s_solve(Sudoku* s)
 {
   // Using Recursive Backtracking.
   // possible numbers for sudoku cache per col, row and subgrid (box)
-  // 
-
-  for (int r = 0; r < SIZE; ++r)
-  {
-    for (int r = 0; r < SIZE; ++r)
-    {
-
-    }
-  }
-
-
+  return s_solve_rec(s, 0, 0);
 }
