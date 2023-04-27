@@ -2,6 +2,8 @@
 
 uses recursive backtracking to solve sudokus
 
+![image](https://user-images.githubusercontent.com/37842304/234782342-fcef1299-aa51-418f-a57e-1312ecef6f6e.png)
+
 # building
 
 ```term
