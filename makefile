@@ -18,9 +18,9 @@ window: src/window.c src/sudoku.c src/sudoku.h
 	gcc src/window.c src/sudoku.c  -o $(OUT_DIR)/window.exe $(RAYLIB) $(FLAGS)
 # Ig the filenames should appear before some other args like -l
 
-gui: src/gui.c lib/raygui.h
-	mkdir ./build
-	gcc src/gui.c -o $(OUT_DIR)/gui.exe $(RAYLIB) $(FLAGS)
+gui: src/gui/main.c lib/raygui.h src/gui/sudoku.c src/gui/sudoku.h
+	# mkdir ./build
+	gcc src/gui/main.c src/gui/sudoku.c -g -o $(OUT_DIR)/gui.exe $(RAYLIB) $(FLAGS)
 
 all: main window gui
 

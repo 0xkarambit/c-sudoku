@@ -7,7 +7,6 @@
 #include <time.h>
 #include <stdbool.h>
 
-
 #include "sudoku.h"
 
 
