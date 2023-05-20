@@ -56,49 +56,7 @@ typedef struct ram_entry_s
 
 RAM_ENTRY RAM[81] = {0};
 // int POSITIONS[81][2] = {0};
-int RC = 0;
-
-void update()
-{
-	// setup clock and FPS count for animation.
-
-	if (ledger->next == NULL)
-		return;
-
-	// PUSH and POP entries...
-	ENTRY *e = ledger->curr;
-	printf("RC: %d\n", RC);
-	printf("event: %s\n", (e->event == PUSH) ? "PUSH" : "POP");
-
-	if (e->event == PUSH)
-	{
-		RAM[RC++].entry = e;
-		int r = e->pos[0];
-		int c = e->pos[1];
-
-		temp.values[r][c] = e->suggestions[0];
-		// RC++;
-	}
-
-	else if (e->event == POP)
-	{
-		// --RC; // -2 coz the index points to a free location by nature of ++;
-		int prev_index = RC - 1;
-		RAM[prev_index].index++;
-
-		int index = RAM[prev_index].index;
-
-		if (RAM[prev_index].entry->suggestions[index] == 0)
-			RC = RC - 1;
-
-		int r = RAM[prev_index].entry->pos[0];
-		int c = RAM[prev_index].entry->pos[1];
-
-		temp.values[r][c] = RAM[prev_index].entry->suggestions[index];
-	}
-
-	ledger = ledger->next;
-}
+int RC = -1;
 
 void render()
 {
@@ -130,16 +88,16 @@ void draw_sudoku(Sudoku *s)
 					0x0};
 
 			DrawRectangle(
-					global_offset + xoffset + (r * BOXSIDE),
 					global_offset + offset + (c * BOXSIDE),
+					global_offset + xoffset + (r * BOXSIDE),
 					BOXSIDE,
 					BOXSIDE,
 					SECONDARY);
 
 			DrawText(
 					number,
-					global_offset + xoffset + (r * BOXSIDE),
 					global_offset + offset + (c * BOXSIDE),
+					global_offset + xoffset + (r * BOXSIDE),
 					32,
 					PRIMARY);
 		}
@@ -168,40 +126,108 @@ void draw_sudoku(Sudoku *s)
 	}
 }
 
+bool FINISHED = false;
+void update()
+{
+	// setup clock and FPS count for animation.
+
+	if (FINISHED)
+		return;
+
+	// PUSH and POP entries...
+	ENTRY *e = ledger->curr;
+	// printf("RC: %d\n", RC);
+	// printf("event: %s\n", (e->event == PUSH) ? "PUSH" : "POP");
+
+	if (e->event == PUSH)
+	{
+		RAM[++RC].entry = e;
+		RAM[RC].index = 0;
+		int r = e->pos[0];
+		int c = e->pos[1];
+
+		temp.values[r][c] = e->suggestions[0];
+		// RC++;
+	}
+
+	else if (e->event == POP)
+	{
+		RAM[RC].entry = NULL;
+		// --RC; // -2 coz the index points to a free location by nature of ++;
+		RC = RC - 1;
+
+		int index = ++(RAM[RC].index);
+
+		// to update in the sudoku to render.
+		int r = RAM[RC].entry->pos[0];
+		int c = RAM[RC].entry->pos[1];
+
+		temp.values[r][c] = RAM[RC].entry->suggestions[index];
+	}
+
+	if (ledger->next == NULL)
+	{
+		FINISHED = true;
+	}
+	ledger = ledger->next;
+}
+
 void draw_entries()
 {
-	Vector2 offset = {800, 200};
-	int padding = 50;
+	Vector2 offset = {300, 100};
+	int padding = 45;
+
+	int y = offset.y;
+	int x = offset.x;
 
 	for (int i = 0; i < RC; i++)
 	{
-		int x = offset.x;
-		int y = offset.y + i * padding;
+		y += padding;
+
+		if (i % 15 == 0)
+		{
+			x += 400;
+			y = offset.y;
+		}
+		// if (i % 30 == 0)
+		// 	offset.x += 400;
+
+		// y = y % 500;
 
 		ENTRY *e = RAM[i].entry;
 		int index = RAM[i].index;
 
-		char string[] = {
-				'[', (char)(e->pos[0] + 0x30), ',', ' ', (char)(e->pos[1] + 0x30), ']', ' ', '-', '>', ' ',
-				(char)(e->suggestions[0] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[1] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[2] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[3] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[4] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[5] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[6] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[7] + 0x30),
-				',', ' ',
-				(char)(e->suggestions[8] + 0x30)};
+		// TODO: make a macros for this lol
 
-		DrawText(string, x, y, 32, PRIMARY);
+#define number(n) (char)(n + 0x30)
+
+		/*
+		 *https://stackoverflow.com/questions/29528732/gdb-print-all-values-in-char-array
+		 https://blogs.oracle.com/linux/post/8-gdb-tricks-you-should-know
+		 https://duckduckgo.com/?q=viewing+structs+in+gdb&t=newext&atb=v325-1&ia=web
+		*/
+
+		char string[] = {
+				'[', number(e->pos[0]), ',', ' ', number(e->pos[1]), ']', ' ', '-', '>', ' ',
+				number(e->suggestions[0]),
+				',', ' ',
+				number(e->suggestions[1]),
+				',', ' ',
+				number(e->suggestions[2]),
+				',', ' ',
+				number(e->suggestions[3]),
+				',', ' ',
+				number(e->suggestions[4]),
+				',', ' ',
+				number(e->suggestions[5]),
+				',', ' ',
+				number(e->suggestions[6]),
+				',', ' ',
+				number(e->suggestions[7]),
+				',', ' ',
+				number(e->suggestions[8])};
+
+		DrawText(string, x, y, 24, PRIMARY);
 	}
 }
 
@@ -217,6 +243,8 @@ int main(void)
 	Sudoku *t = s_alloc_sudoku(temp);
 	s_solve_rec(t, 0, 0);
 
+	s_print(t);
+
 	ledger = head; // lazy excuse....
 	deb_entries();
 	ledger = head->next; // lazy excuse....
@@ -226,14 +254,18 @@ int main(void)
 	const int screenHeight = 1080;
 
 	// SetConfigFlags(FLAG_WINDOW_UNDECORATED);
+	SetTargetFPS(60);
 	InitWindow(screenWidth, screenHeight, TITLE);
 
-	SetWindowPosition(100, 100);
+	SetWindowPosition(0, 0);
+	int frame_count = 0;
 
 	while (!WindowShouldClose())
 	{
-
-		update();
+		// calling update every second
+		frame_count++;
+		if (frame_count % (30) == 0)
+			update();
 
 		BeginDrawing();
 
