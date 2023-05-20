@@ -73,8 +73,10 @@ void update()
 	if (e->event == PUSH)
 	{
 		RAM[RC++].entry = e;
-		// POSITIONS[RC][0] = e.pos[0];
-		// POSITIONS[RC][1] = e.pos[1];
+		int r = e->pos[0];
+		int c = e->pos[1];
+
+		temp.values[r][c] = e->suggestions[0];
 		// RC++;
 	}
 
@@ -88,6 +90,11 @@ void update()
 
 		if (RAM[prev_index].entry->suggestions[index] == 0)
 			RC = RC - 1;
+
+		int r = RAM[prev_index].entry->pos[0];
+		int c = RAM[prev_index].entry->pos[1];
+
+		temp.values[r][c] = RAM[prev_index].entry->suggestions[index];
 	}
 
 	ledger = ledger->next;
@@ -163,7 +170,7 @@ void draw_sudoku(Sudoku *s)
 
 void draw_entries()
 {
-	Vector2 offset = {400, 200};
+	Vector2 offset = {800, 200};
 	int padding = 50;
 
 	for (int i = 0; i < RC; i++)
@@ -175,7 +182,7 @@ void draw_entries()
 		int index = RAM[i].index;
 
 		char string[] = {
-				'[', (char)(e->pos[0] + 0x30), (char)(e->pos[0] + 0x30), ']', ' ', '-', '>', ' ',
+				'[', (char)(e->pos[0] + 0x30), ',', ' ', (char)(e->pos[1] + 0x30), ']', ' ', '-', '>', ' ',
 				(char)(e->suggestions[0] + 0x30),
 				',', ' ',
 				(char)(e->suggestions[1] + 0x30),
