@@ -28,13 +28,7 @@ int *s_get_row_slice(Sudoku *s, int rowIndex);
 int *s_get_col_slice(Sudoku *s, int colIndex);
 int *s_get_box_slice(Sudoku *s, int rowIndex, int colIndex);
 
-bool s_is_array_valid(int *array);
-bool s_is_solved(Sudoku *s);
-
 void s_prep_cache(Sudoku *s, int r, int c);
-void s_prep_cache_all(Sudoku *s);
-
-bool s_solve(Sudoku *s);
 bool s_solve_rec(Sudoku *s, int r, int c);
 
 // ----------------------------------------
@@ -46,6 +40,7 @@ typedef enum event
   POP
 } EVENT;
 
+// An entry stores the meaningful state of one frame of the recursive function s_solve_rec.
 typedef struct entry_s
 {
   EVENT event;
@@ -60,6 +55,6 @@ typedef struct entry_list_s
   struct entry_list_s *next;
 } ENTRY_LIST;
 
-void free_list();
-void deb_entries();
+void free_ledger();
+void deb_ledger();
 void addEntry(EVENT event, int pos[2], int suggestions[9]);

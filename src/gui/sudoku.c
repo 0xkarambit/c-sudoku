@@ -1,18 +1,7 @@
 #include "sudoku.h"
 
-int BOXES[SIZE][2] = {
-    // top
-    {0, 0},
-    {0, 3},
-    {0, 6},
-    // middle
-    {3, 0},
-    {3, 3},
-    {3, 6},
-    // bottom
-    {6, 0},
-    {6, 3},
-    {6, 6}};
+// used to hold the "suggestions" -> possible values for each cell.
+int cache[9][9][9] = {0};
 
 int *s_get_row_slice(Sudoku *s, int rowIndex)
 {
@@ -93,74 +82,6 @@ int *s_get_box_slice(Sudoku *s, int rowIndex, int colIndex)
   return arr;
 }
 
-// we need to check the mini_box, row, col
-// i think this will run quite slow because of a lot calloc use !
-bool s_is_solved(Sudoku *s)
-{
-  // check all rows
-  for (int bc = 0; bc < SIZE; ++bc)
-  {
-    int *row = s_get_row_slice(s, bc);
-    if (s_is_array_valid(row) == false)
-    {
-      return false;
-    }
-    free(row);
-  }
-
-  // check all cols
-  for (int bc = 0; bc < SIZE; ++bc)
-  {
-    int *col = s_get_col_slice(s, bc);
-    if (s_is_array_valid(col) == false)
-    {
-      return false;
-    }
-    free(col);
-  }
-
-  // check all boxes
-  for (int bc = 0; bc < SIZE; ++bc)
-  {
-    int r = BOXES[bc][0];
-    int c = BOXES[bc][1];
-
-    int *box = s_get_box_slice(s, r, c);
-
-    // check if the array is valid
-    if (s_is_array_valid(box) == false)
-    {
-      return false;
-    }
-    free(box);
-  }
-
-  return true;
-}
-
-bool s_is_array_valid(int *array)
-{
-  // O(n^2) But its only 9 by 9 so i guess its okay
-  for (int i = 0; i < SIZE; ++i)
-  {
-#if 0
-        if (array[i] < 1 && array[i] > 9) return false;
-#endif
-    for (int j = 0; j < SIZE; ++j)
-    {
-      if (i == j)
-        continue;
-      else
-      {
-        if (array[i] == array[j])
-          return false;
-      }
-    }
-  }
-
-  return true;
-}
-
 void s_print(Sudoku *s)
 {
   for (int r = 0; r < SIZE; ++r)
@@ -222,13 +143,6 @@ Sudoku *s_alloc_sudoku(Sudoku sudoku)
   return s;
 }
 
-// int row_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
-// int col_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
-// int grid_c[9][9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // 0 = null
-
-// [r][c][suggestions] = {1,2,3,4,0,0,0,0,0}
-int cache[9][9][9] = {0};
-
 void s_prep_cache(Sudoku *s, int r, int c)
 {
   int num = s->values[r][c];
@@ -273,24 +187,6 @@ void s_prep_cache(Sudoku *s, int r, int c)
   free(box);
 }
 
-void s_prep_cache_all(Sudoku *s)
-{
-  for (int r = 0; r < SIZE; ++r)
-  {
-    for (int c = 0; c < SIZE; ++c)
-    {
-      s_prep_cache(s, r, c);
-    }
-  }
-}
-
-bool s_solve(Sudoku *s)
-{
-  // Using Recursive Backtracking.
-  // possible numbers for sudoku cache per col, row and subgrid (box)
-  return s_solve_rec(s, 0, 0);
-}
-
 // --------------------------------
 // GUI STUFF
 
@@ -300,25 +196,19 @@ ENTRY_LIST *head;
 void addEntry(EVENT event, int pos[2], int suggestions[9])
 {
   ENTRY *e = calloc(sizeof(ENTRY), 1);
+  e->event = event;
+  e->pos[0] = pos[0];
+  e->pos[1] = pos[1];
 
+  // suggestions are only valuable if its PUSH.
   if (event == PUSH)
   {
     int *sug = calloc(sizeof(int) * 9, 1);
     memmove(sug, suggestions, sizeof(int) * 9);
-
-    e->event = event;
-    e->pos[0] = pos[0];
-    e->pos[1] = pos[1];
     e->suggestions = sug;
   }
-  else
-  {
-    e->event = event;
-    e->pos[0] = pos[0];
-    e->pos[1] = pos[1];
-    // e->suggestions = sug;
-  }
 
+  // adding ENTRY to LinkedList ledger and moving it forward.
   ENTRY_LIST *l = calloc(sizeof(ENTRY_LIST), 1);
   l->curr = e;
   l->next = NULL;
@@ -328,7 +218,7 @@ void addEntry(EVENT event, int pos[2], int suggestions[9])
   ledger = l;
 }
 
-void deb_entries()
+void deb_ledger()
 {
   while (ledger->next != NULL)
   {
@@ -337,17 +227,14 @@ void deb_entries()
     if (e->event == PUSH)
     {
       for (int i = 0; i < 9; i++)
-      {
         printf("%d ", e->suggestions[i]);
-      }
     }
     printf("\n\n");
     ledger = ledger->next;
   }
 }
 
-// void free_list(ENTRY_LIST *list)
-void free_list()
+void free_ledger()
 {
   while (ledger->next != NULL)
   {
@@ -364,11 +251,13 @@ bool s_solve_rec(Sudoku *s, int r, int c)
   if (c == 9)
   {
     c = 0;
-    ++r;
-    if (r == 9)
+    // moving to next row, (coz all column of this row are done)
+    // return true if entire sudoku has been solved.
+    if (++r == 9)
       return true;
   }
 
+  // 0 val represents an empty cell.
   if (s->values[r][c] == 0)
   {
     int cc = 0; // cache_counter
@@ -381,25 +270,21 @@ bool s_solve_rec(Sudoku *s, int r, int c)
     {
       int suggestion = cache[r][c][cc++];
 
+      // suggestion being 0 means we have run out of valid suggestions available for this cell.
       if (suggestion == 0)
       {
         s->values[r][c] = 0;
-        memset(cache[r][c], 0, sizeof(int) * 9);
+        memset(cache[r][c], 0, sizeof(int) * 9); // clear previous suggestions
         addEntry(POP, (int[2]){r, c}, cache[r][c]);
         return false;
       };
 
+      // trying current suggestion and moving to next cell.
       s->values[r][c] = suggestion;
-
       solved = s_solve_rec(s, r, c + 1);
     }
-    // we would essentially run the loop till we keep getting false..
-    // exit condition -> exhaust all options. -> return false.
-    //                   solved = true.
     return true;
   }
-  else
-  {
-    return s_solve_rec(s, r, c + 1);
-  }
+  // moving to next cell if this cell is solved already.
+  return s_solve_rec(s, r, c + 1);
 }

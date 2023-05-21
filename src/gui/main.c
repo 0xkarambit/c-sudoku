@@ -1,16 +1,17 @@
 #include <raylib.h>
 
-#define RAYGUI_IMPLEMENTATION
-#include "../../lib/raygui.h"
-
-#define and &&
-#define or ||
-#define TITLE "Sudoku Solver"
 #include "sudoku.h"
+#include "main.h"
 
-#define DELAY 500
+#define TITLE "Sudoku Solver"
+
+const int screenWidth = 1920;
+const int screenHeight = 1080;
+
 #define BOXSIDE 50
 #define MAX 9
+
+#define number(n) (char)(n + 0x30)
 
 const Color PRIMARY = RED;
 const Color SECONDARY = SKYBLUE;
@@ -27,15 +28,8 @@ Sudoku temp = {
 				{9, 0, 2, 1, 0, 0, 0, 0, 5},
 				{0, 0, 7, 0, 4, 0, 8, 0, 2}}};
 
-// Vector2 center_coor() {}
-extern ENTRY_LIST *ledger;
+extern ENTRY_LIST *ledger; // linkedlist that holds all ENTRIES.
 extern ENTRY_LIST *head;
-
-Font font;
-int spacing = 4;
-
-void draw_sudoku(Sudoku *s);
-void draw_entries();
 
 void init_ledger()
 {
@@ -49,25 +43,19 @@ void init_ledger()
 	memmove(ledger->curr->suggestions, sug, sizeof(int) * 9);
 }
 
-// MACHINE LOGIC
+// REPLAY MACHINE LOGIC
 bool FINISHED = false;
 
 typedef struct ram_entry_s
 {
 	ENTRY *entry;
-	int index;
+	int index; // to keep track of the current suggestion being followed
 } RAM_ENTRY;
 
 RAM_ENTRY RAM[81] = {0};
-// int POSITIONS[81][2] = {0};
 int RC = -1;
 
-void render()
-{
-	ClearBackground(RAYWHITE);
-	draw_sudoku(&temp);
-	draw_entries();
-}
+//  Rendering Functions
 
 void draw_sudoku(Sudoku *s)
 {
@@ -145,51 +133,6 @@ void draw_sudoku(Sudoku *s)
 	}
 }
 
-void update()
-{
-	// setup clock and FPS count for animation.
-
-	if (FINISHED)
-		return;
-
-	// PUSH and POP entries...
-	ENTRY *e = ledger->curr;
-	// printf("RC: %d\n", RC);
-	// printf("event: %s\n", (e->event == PUSH) ? "PUSH" : "POP");
-
-	if (e->event == PUSH)
-	{
-		RAM[++RC].entry = e;
-		RAM[RC].index = 0;
-		int r = e->pos[0];
-		int c = e->pos[1];
-
-		temp.values[r][c] = e->suggestions[0];
-		// RC++;
-	}
-
-	else if (e->event == POP)
-	{
-		RAM[RC].entry = NULL;
-		// --RC; // -2 coz the index points to a free location by nature of ++;
-		RC = RC - 1;
-
-		int index = ++(RAM[RC].index);
-
-		// to update in the sudoku to render.
-		int r = RAM[RC].entry->pos[0];
-		int c = RAM[RC].entry->pos[1];
-
-		temp.values[r][c] = RAM[RC].entry->suggestions[index];
-	}
-
-	if (ledger->next == NULL)
-	{
-		FINISHED = true;
-	}
-	ledger = ledger->next;
-}
-
 void draw_entries()
 {
 	Vector2 offset = {300, 100};
@@ -216,8 +159,6 @@ void draw_entries()
 		int index = RAM[i].index;
 
 		// TODO: make a macros for this lol
-
-#define number(n) (char)(n + 0x30)
 
 		/*
 		 *https://stackoverflow.com/questions/29528732/gdb-print-all-values-in-char-array
@@ -262,27 +203,75 @@ void draw_entries()
 	}
 }
 
+void render()
+{
+	ClearBackground(RAYWHITE);
+	draw_sudoku(&temp);
+	draw_entries();
+}
+
+// Update function
+
+void update()
+{
+	if (FINISHED)
+		return;
+
+	// PUSH and POP entries...
+	ENTRY *e = ledger->curr;
+	// printf("RC: %d\n", RC);
+	// printf("event: %s\n", (e->event == PUSH) ? "PUSH" : "POP");
+
+	if (e->event == PUSH)
+	{
+		RC += 1;
+		RAM[RC].entry = e;
+		RAM[RC].index = 0;
+		int r = e->pos[0];
+		int c = e->pos[1];
+
+		// updating current suggestion in the sudoku being rendered onscreen
+		temp.values[r][c] = e->suggestions[0];
+	}
+
+	else if (e->event == POP)
+	{
+		// RAM[RC].entry = NULL;
+		RC = RC - 1;
+
+		// moving to next suggestion of previous ENTRY / STATE FRAME
+		int index = ++(RAM[RC].index);
+
+		// to update in the sudoku to render.
+		int r = RAM[RC].entry->pos[0];
+		int c = RAM[RC].entry->pos[1];
+
+		// updating suggestion.
+		temp.values[r][c] = RAM[RC].entry->suggestions[index];
+	}
+
+	// All STEPS has been replayed
+	if (ledger->next == NULL)
+	{
+		FINISHED = true;
+	}
+	ledger = ledger->next;
+}
+
 int main(void)
 {
 
-	s_print_stack(temp);
-
 	init_ledger();
 
-	head = ledger;
+	head = ledger; // coz `ledger` would get moved to the tail eventually due to s_solve_rec etc..
 
 	Sudoku *t = s_alloc_sudoku(temp);
-	s_solve_rec(t, 0, 0);
+	bool solved = s_solve_rec(t, 0, 0);
+	// if (!solved) printf("COULDNT SOLVE SUDOKU...\n");
 
-	s_print(t);
-
-	// ledger = head; // lazy excuse....
-	// deb_entries();
-	ledger = head->next; // lazy excuse....
+	ledger = head->next; // first entry if meaningless so starting the REPLAY of the RECORDED STEPS/STATE from the 2nd entry
 
 	// -------------- GUI
-	const int screenWidth = 1920;
-	const int screenHeight = 1080;
 
 	SetTargetFPS(60);
 	InitWindow(screenWidth, screenHeight, TITLE);
@@ -302,6 +291,7 @@ int main(void)
 		EndDrawing();
 	}
 
-	free_list();
+	ledger = head;
+	free_ledger();
 	return 0;
 }
