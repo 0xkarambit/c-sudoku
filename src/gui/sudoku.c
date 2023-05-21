@@ -281,7 +281,6 @@ void s_prep_cache_all(Sudoku *s)
     {
       s_prep_cache(s, r, c);
     }
-    printf("\n");
   }
 }
 

@@ -13,7 +13,7 @@
 #define MAX 9
 
 const Color PRIMARY = RED;
-const Color SECONDARY = RAYWHITE;
+const Color SECONDARY = SKYBLUE;
 
 Sudoku temp = {
 		.values = {
@@ -31,6 +31,9 @@ Sudoku temp = {
 extern ENTRY_LIST *ledger;
 extern ENTRY_LIST *head;
 
+Font font;
+int spacing = 4;
+
 void draw_sudoku(Sudoku *s);
 void draw_entries();
 
@@ -47,6 +50,7 @@ void init_ledger()
 }
 
 // MACHINE LOGIC
+bool FINISHED = false;
 
 typedef struct ram_entry_s
 {
@@ -88,8 +92,8 @@ void draw_sudoku(Sudoku *s)
 					0x0};
 
 			DrawRectangle(
-					global_offset + offset + (c * BOXSIDE),
-					global_offset + xoffset + (r * BOXSIDE),
+					global_offset + (c * BOXSIDE),
+					global_offset + (r * BOXSIDE),
 					BOXSIDE,
 					BOXSIDE,
 					SECONDARY);
@@ -103,6 +107,21 @@ void draw_sudoku(Sudoku *s)
 		}
 	}
 
+	// highlights the position currectly being computed
+#if 1
+	if (RC > -1 && !FINISHED)
+	{
+		int x = RAM[RC].entry->pos[0];
+		int y = RAM[RC].entry->pos[1];
+
+		DrawRectangle(
+				global_offset + (y * BOXSIDE),
+				global_offset + (x * BOXSIDE),
+				BOXSIDE,
+				BOXSIDE,
+				BLUE);
+	}
+#endif
 	// drawing grid
 	// horizontally ->
 	for (int r = 0; r < 10; ++r)
@@ -126,7 +145,6 @@ void draw_sudoku(Sudoku *s)
 	}
 }
 
-bool FINISHED = false;
 void update()
 {
 	// setup clock and FPS count for animation.
@@ -180,7 +198,7 @@ void draw_entries()
 	int y = offset.y;
 	int x = offset.x;
 
-	for (int i = 0; i < RC; i++)
+	for (int i = 0; i <= RC; i++)
 	{
 		y += padding;
 
@@ -210,24 +228,37 @@ void draw_entries()
 		char string[] = {
 				'[', number(e->pos[0]), ',', ' ', number(e->pos[1]), ']', ' ', '-', '>', ' ',
 				number(e->suggestions[0]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[1]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[2]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[3]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[4]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[5]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[6]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[7]),
-				',', ' ',
+				// ',', ' ',
+				' ',
 				number(e->suggestions[8])};
 
 		DrawText(string, x, y, 24, PRIMARY);
+		// 10 * 10 -- for 10 chars before the actual suggestions numbers start
+		// index * 24 to draw the '^' pointer at the correct number's location.
+		// although its better to just highlight the selected number using a different color
+		DrawText("^", x + (10 * 10) + (index * 20), y + 20, 38, BLUE);
+		// DrawTextEx(font, string, (Vector2){x, y}, 24, spacing, PRIMARY);
 	}
 }
 
@@ -245,15 +276,14 @@ int main(void)
 
 	s_print(t);
 
-	ledger = head; // lazy excuse....
-	deb_entries();
+	// ledger = head; // lazy excuse....
+	// deb_entries();
 	ledger = head->next; // lazy excuse....
 
 	// -------------- GUI
 	const int screenWidth = 1920;
 	const int screenHeight = 1080;
 
-	// SetConfigFlags(FLAG_WINDOW_UNDECORATED);
 	SetTargetFPS(60);
 	InitWindow(screenWidth, screenHeight, TITLE);
 
@@ -262,9 +292,8 @@ int main(void)
 
 	while (!WindowShouldClose())
 	{
-		// calling update every second
 		frame_count++;
-		if (frame_count % (30) == 0)
+		if (frame_count % (10) == 0)
 			update();
 
 		BeginDrawing();
